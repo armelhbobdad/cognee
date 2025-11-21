@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - ci_release_pipeline
   pull_request:
     types: [closed]
     branches:
