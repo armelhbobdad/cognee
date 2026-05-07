@@ -46,7 +46,9 @@ def _make_fake_hybrid(batch_size: int):
     fake._graph._session = MagicMock(return_value=session_cm)
 
     async def embed_data(texts):
-        if len(texts) > batch_size:
+        # batch_size <= 0 means "no per-call cap" — the production code is expected
+        # to fall back to a single all-in-one call, so don't enforce here.
+        if batch_size > 0 and len(texts) > batch_size:
             raise ValueError(
                 f"embed_data called with {len(texts)} texts, exceeds batch_size={batch_size}"
             )
@@ -94,3 +96,35 @@ async def test_add_edges_with_vectors_chunks_by_batch_size():
         assert len(texts) <= 2, f"chunk size {len(texts)} exceeds batch_size 2"
     all_texts = sorted(t for call in calls for t in call.args[0])
     assert all_texts == sorted(f"rel_{i}" for i in range(5))
+
+
+@pytest.mark.asyncio
+async def test_add_nodes_with_vectors_batch_size_zero_falls_back_to_single_call():
+    """get_batch_size()==0 must not crash on `range() arg 3 must not be zero`.
+
+    The adapter falls back to len(texts) so the loop runs exactly once and
+    embed_data is called with all inputs at once (matches pre-batching behavior).
+    """
+    adapter = _make_fake_hybrid(batch_size=0)
+    nodes = [_Node(id=uuid4(), name=f"n{i}") for i in range(5)]
+
+    await adapter.add_nodes_with_vectors(nodes)
+
+    calls = adapter._vector.embed_data.await_args_list
+    assert len(calls) == 1, f"expected 1 fallback call, got {len(calls)}"
+    (texts,) = calls[0].args
+    assert sorted(texts) == sorted(f"n{i}" for i in range(5))
+
+
+@pytest.mark.asyncio
+async def test_add_edges_with_vectors_batch_size_zero_falls_back_to_single_call():
+    """Same fallback for edges: get_batch_size()==0 → one all-inputs call."""
+    adapter = _make_fake_hybrid(batch_size=0)
+    edges = [(str(uuid4()), str(uuid4()), f"rel_{i}", {"edge_text": f"rel_{i}"}) for i in range(5)]
+
+    await adapter.add_edges_with_vectors(edges)
+
+    calls = adapter._vector.embed_data.await_args_list
+    assert len(calls) == 1, f"expected 1 fallback call, got {len(calls)}"
+    (texts,) = calls[0].args
+    assert sorted(texts) == sorted(f"rel_{i}" for i in range(5))
