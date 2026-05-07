@@ -74,10 +74,11 @@ async def test_add_nodes_with_vectors_chunks_by_batch_size():
 
     calls = adapter._vector.embed_data.await_args_list
     assert len(calls) == 3, f"expected 3 chunked calls, got {len(calls)}"
+    all_texts = []
     for call in calls:
         (texts,) = call.args
         assert len(texts) <= 2, f"chunk size {len(texts)} exceeds batch_size 2"
-    all_texts = [t for call in calls for t in call.args[0]]
+        all_texts.extend(texts)
     assert sorted(all_texts) == sorted(f"n{i}" for i in range(5))
 
 
@@ -91,11 +92,12 @@ async def test_add_edges_with_vectors_chunks_by_batch_size():
 
     calls = adapter._vector.embed_data.await_args_list
     assert len(calls) == 3, f"expected 3 chunked calls, got {len(calls)}"
+    all_texts = []
     for call in calls:
         (texts,) = call.args
         assert len(texts) <= 2, f"chunk size {len(texts)} exceeds batch_size 2"
-    all_texts = sorted(t for call in calls for t in call.args[0])
-    assert all_texts == sorted(f"rel_{i}" for i in range(5))
+        all_texts.extend(texts)
+    assert sorted(all_texts) == sorted(f"rel_{i}" for i in range(5))
 
 
 @pytest.mark.asyncio
