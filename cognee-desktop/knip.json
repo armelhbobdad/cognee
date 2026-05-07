@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/mainview/index.tsx",
+    "src/bun/index.ts",
+    "electrobun.config.ts",
+    "vite.config.ts",
+    "scripts/**/*.ts",
+    ".storybook/main.ts",
+    ".storybook/preview.tsx",
+    "src/mainview/components/**/*.stories.@(ts|tsx)"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "shared/**/*.{ts,tsx}",
+    ".storybook/**/*.{ts,tsx}"
+  ],
+  "ignore": ["dist", "node_modules", "src/mainview/components/uitripled/**"],
+  "ignoreDependencies": ["tw-animate-css"],
+  "vite": {
+    "config": "vite.config.ts"
+  }
+}

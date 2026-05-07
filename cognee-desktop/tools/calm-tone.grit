@@ -1,0 +1,22 @@
+// cognee-desktop · Biome GritQL plugin — calm-tone enforcement
+//
+// Bans celebratory affordances in source: "🎉", "All set!", "Got it!",
+// "Welcome!". The cognee desktop UI keeps a deliberately understated
+// tone; these literals are caught at lint time so they don't reach
+// review.
+//
+// STATUS: scaffold pattern — verifies the plugin loads cleanly. The
+// full ban-list still needs GritQL tuning to cover JSXText, template
+// literals, and i18n message shells before being registered in
+// biome.json.
+//
+// Reference: https://biomejs.dev/recipes/gritql-plugins/
+
+language js
+
+// Placeholder pattern — matches a literal that will never appear in source,
+// so the plugin loads cleanly without producing diagnostics until the real
+// patterns are wired. Replace with the calm-tone ban-list once tuned.
+`"__CALM_TONE_PLUGIN_NOT_YET_WIRED__"` where {
+	register_diagnostic(span=$0, message="Calm-tone plugin loaded (placeholder).")
+}

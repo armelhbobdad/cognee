@@ -1,0 +1,461 @@
+@import "tailwindcss";
+
+/* `next-themes` is configured with `attribute="data-theme"` in
+ * `theme-provider.tsx`, so the dark scope is `[data-theme="dark"]` not the
+ * shadcn-default `.dark` class. The variant below mirrors that setup so
+ * Tailwind's `dark:` utilities fire on the same attribute the theme provider
+ * sets. Switching attribute and class would require updating both sides. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* cognee-desktop brand tokens
+ *
+ * Architecture:
+ *   1. :root + [data-theme="dark"] — raw CSS custom properties using
+ *      shadcn-style unprefixed semantic names (--primary, --foreground).
+ *      Drives light/dark switching at the variable layer.
+ *   2. @theme inline — dynamically references the :root vars to generate
+ *      Tailwind 4 utility classes (bg-primary, text-foreground, etc.).
+ *      `inline` is required so dark-mode overrides cascade correctly.
+ *   3. Layout constants live as plain :root vars (sidebar-width etc.)
+ *      not in spacing scale because they're fixed component dimensions.
+ *
+ * Sibling reference: cognee-frontend/src/app/globals.css uses the same
+ * cognee-purple primary token. */
+
+/* ─── Light theme (default) ──────────────────────────────────────────── */
+:root {
+	/* Brand Color Palette */
+	--primary: #6510f4; /* cognee-purple */
+	--primary-foreground: #ffffff;
+	--primary-hover: #5a0ed6;
+	--primary-pressed: #4a0baf;
+	--selected: #f0edff; /* purple wash */
+	--selected-hover: #e8e2fd;
+	--ring: #6510f4;
+
+	/* Surface & Neutral Palette (zinc, matching cognee-frontend) */
+	--surface-canvas: #f4f4f4; /* window canvas — body bg */
+	--background: #ffffff; /* raised surfaces (cards, modals) */
+	--muted: #fafafa; /* sidebar, status bar */
+	--muted-foreground: #71717a;
+	--foreground: #18181b;
+	--body: #3f3f46;
+	--secondary-text: #52525b;
+	--placeholder: #a1a1aa;
+	--text-disabled: #d4d4d8;
+	--border: #e4e4e7;
+	--border-light: #e5e7eb;
+	--input: #e4e4e7;
+	--accent: #f4f4f5;
+	--pressed: #e4e4e7;
+	--secondary: #f4f4f5;
+	--secondary-foreground: #18181b;
+
+	/* Semantic Colors (single value light/dark) */
+	--destructive: #ef4444;
+	--destructive-foreground: #ffffff;
+	--success: #22c55e;
+	--warning: #f59e0b;
+
+	/* Graph-Canvas Palette */
+	--graph-node: #18181b;
+	--graph-edge: #71717a;
+	--graph-hl: #f59e0b; /* amber — pinned/focused/trace highlight (single value) */
+	--graph-flag: #ef4444; /* red — contradiction node (single value) */
+	--graph-fresh: #0dff00; /* cognee-green — "just-cognified" pulse, GRAPH-CANVAS ONLY (single value) */
+	--graph-dim: #d4d4d8; /* hover-non-neighbor dim (single value, light only) */
+
+	/* Graph node colors by entity type. Lifted out of the GraphCanvas
+	 * component on 2026-05-08 so the palette is editable at the token
+	 * layer and visible to design system tooling. Light theme only at v0.1;
+	 * dark theme reconciliation deferred to v0.2 when the canvas dark mode
+	 * lands. The fallback for unknown types is `--primary`. */
+	--graph-type-organization: #6510f4; /* primary cognee-purple */
+	--graph-type-concept: #a78bfa; /* lavender — primary at lower saturation */
+	--graph-type-source: #52525b; /* secondary text gray */
+	--graph-type-chunk: #a1a1aa; /* placeholder gray */
+	--graph-type-person: #22c55e; /* green — overlaps --success at canvas (intentional) */
+	--graph-type-place: #f59e0b; /* amber — overlaps --graph-hl at canvas (intentional) */
+
+	/* Spacing Scale (matches Tailwind 4 default px values) */
+	--space-zero: 0;
+	--space-2xs: 0.25rem; /* 4px — icon-to-label */
+	--space-xs: 0.5rem; /* 8px — tight inline */
+	--space-sm: 0.75rem; /* 12px — within-component padding */
+	--space-md: 1rem; /* 16px — DEFAULT element gap */
+	--space-lg: 1.5rem; /* 24px — between sections */
+	--space-xl: 2rem; /* 32px — major section boundary */
+	--space-2xl: 3rem; /* 48px — hero centerline */
+	--space-3xl: 4rem; /* 64px — first-run welcome top-pad */
+
+	/* Layout constants (component-specific dimensions, not spacing scale) */
+	--sidebar-width: 15rem; /* 240px */
+	--statusbar-height: 1.75rem; /* 28px */
+	--inspect-default-width: 22.5rem; /* 360px */
+	--inspect-flag-width: 30rem; /* 480px */
+
+	/* Elevation / Shadow scale */
+	/* Tints are --foreground (Zinc 950) at low opacity, NOT pure black, for of-a-piece chrome feel. */
+	--shadow-xs: 0 1px 2px rgba(24, 24, 27, 0.04); /* hover lift on dataset rows, primitives */
+	--shadow-sm: 0 2px 4px rgba(24, 24, 27, 0.06); /* dropdowns, popovers, mode-select */
+	--shadow-md: 0 4px 12px rgba(24, 24, 27, 0.08); /* command-K palette, modals, confirm dialogs */
+	--shadow-lg: 0 12px 32px rgba(24, 24, 27, 0.12); /* about dialog, error overlays, full-screen escalation */
+
+	/* Motion / Duration tokens */
+	--motion-instant: 80ms; /* press feedback, focus ring appearance */
+	--motion-quick: 120ms; /* button hover, link color change, nav-item state change */
+	--motion-base: 200ms; /* toast slide-in, panel reveal, route transitions */
+	--motion-slow: 320ms; /* dataset detail open, surface composition transitions */
+	--motion-ambient: 1400ms; /* sidecar-busy pulse — never shorter; vestibular safety */
+
+	--ease-standard: cubic-bezier(0.2, 0, 0, 1); /* default for state changes */
+	--ease-emphasis: cubic-bezier(
+		0.3,
+		0,
+		0,
+		1
+	); /* enter transitions for new content */
+	--ease-pulse: cubic-bezier(
+		0.4,
+		0,
+		0.6,
+		1
+	); /* sidecar-busy ambient pulse curve */
+
+	/* Z-index scale */
+	--z-base: 0; /* default canvas content */
+	--z-sticky: 10; /* canvas toolbar */
+	--z-statusbar: 20;
+	--z-dropdown: 100; /* mode select, more-horizontal menu */
+	--z-overlay: 200; /* drag-drop ingest target, dimmed-canvas backdrop */
+	--z-modal: 300; /* about, settings detail, confirm dialog */
+	--z-toast: 400;
+	--z-tooltip: 500;
+
+	/* Radii */
+	--radius-sm: 0.25rem; /* 4px */
+	--radius-md: 0.375rem; /* 6px */
+	--radius-lg: 0.5rem; /* 8px */
+
+	/* Type — sizes */
+	--text-xs: 0.75rem; /* 12px — captions, helpers, footer chrome */
+	--text-sm: 0.875rem; /* 14px — dense surfaces */
+	--text-md: 1rem; /* 16px — DEFAULT body */
+	--text-lg: 1.125rem; /* 18px — subheads, card titles */
+	--text-xl: 1.25rem; /* 20px — section H2 */
+	--text-2xl: 1.5rem; /* 24px — page H1 (most surfaces) */
+	--text-display-md: 1.875rem; /* 30px — TWK Lausanne; first-run welcome + About name lockup */
+	--text-display-lg: 2.25rem; /* 36px — TWK Lausanne; reserved for v0.2 */
+
+	/* Type — line heights (matches cognee-frontend Mantine config) */
+	--leading-tight: 1.33; /* text-xs caption density */
+	--leading-snug: 1.43; /* text-sm dense rows */
+	--leading-normal: 1.55; /* text-md / lg / xl body comfort */
+	--leading-display: 1.2; /* text-display-* tight hero stacks */
+
+	/* Type — font families (3 families, 3 jobs) */
+	--font-sans: "Inter", system-ui, sans-serif;
+	--font-display: "TWK Lausanne", "Inter", system-ui, sans-serif;
+	--font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+	/* Type — weights (matches Tailwind defaults; included for spec explicitness) */
+	--weight-normal: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+	/* Sidebar tokens — aliased to the brand-aligned semantic vars above so
+	 * shadcn primitives that consume `--sidebar-*` pick up cognee chrome
+	 * instead of the upstream zinc defaults. */
+	--sidebar: var(--muted);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--foreground);
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
+}
+
+/* ─── Dark theme — explicit opt-in via [data-theme="dark"] ───────────── */
+[data-theme="dark"] {
+	/* Brand — themed where applicable */
+	--selected: #3a0090;
+	--selected-hover: #4a0baf;
+
+	/* Surface & Neutral (zinc dark) */
+	--surface-canvas: #18181b;
+	--background: #27272a;
+	--muted: #27272a;
+	--muted-foreground: #a1a1aa;
+	--foreground: #f4f4f5;
+	--body: #d4d4d8;
+	--secondary-text: #a1a1aa;
+	--placeholder: #71717a;
+	--text-disabled: #52525b;
+	--border: #3f3f46;
+	--border-light: #3f3f46;
+	--input: #3f3f46;
+	--accent: #27272a;
+	--pressed: #3f3f46;
+	--secondary: #27272a;
+	--secondary-foreground: #f4f4f5;
+
+	/* Graph-Canvas (themed where applicable) */
+	--graph-node: #f4f4f5;
+	--graph-edge: #a1a1aa;
+}
+
+/* ─── Dark theme — system preference fallback (no explicit [data-theme]) ── */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--selected: #3a0090;
+		--selected-hover: #4a0baf;
+		--surface-canvas: #18181b;
+		--background: #27272a;
+		--muted: #27272a;
+		--muted-foreground: #a1a1aa;
+		--foreground: #f4f4f5;
+		--body: #d4d4d8;
+		--secondary-text: #a1a1aa;
+		--placeholder: #71717a;
+		--text-disabled: #52525b;
+		--border: #3f3f46;
+		--border-light: #3f3f46;
+		--input: #3f3f46;
+		--accent: #27272a;
+		--pressed: #3f3f46;
+		--secondary: #27272a;
+		--secondary-foreground: #f4f4f5;
+		--graph-node: #f4f4f5;
+		--graph-edge: #a1a1aa;
+	}
+}
+
+/* ─── Tailwind 4 @theme inline — bridges :root vars to utility classes ── */
+@theme inline {
+	/* Colors → bg-{name} / text-{name} / border-{name} / etc. */
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary-hover: var(--primary-hover);
+	--color-primary-pressed: var(--primary-pressed);
+	--color-selected: var(--selected);
+	--color-selected-hover: var(--selected-hover);
+	--color-ring: var(--ring);
+
+	--color-surface-canvas: var(--surface-canvas);
+	--color-background: var(--background);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-foreground: var(--foreground);
+	--color-body: var(--body);
+	--color-secondary-text: var(--secondary-text);
+	--color-placeholder: var(--placeholder);
+	--color-text-disabled: var(--text-disabled);
+	--color-border: var(--border);
+	--color-border-light: var(--border-light);
+	--color-input: var(--input);
+	--color-accent: var(--accent);
+	--color-pressed: var(--pressed);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+
+	--color-graph-node: var(--graph-node);
+	--color-graph-edge: var(--graph-edge);
+	--color-graph-hl: var(--graph-hl);
+	--color-graph-flag: var(--graph-flag);
+	--color-graph-fresh: var(--graph-fresh);
+	--color-graph-dim: var(--graph-dim);
+	--color-graph-type-organization: var(--graph-type-organization);
+	--color-graph-type-concept: var(--graph-type-concept);
+	--color-graph-type-source: var(--graph-type-source);
+	--color-graph-type-chunk: var(--graph-type-chunk);
+	--color-graph-type-person: var(--graph-type-person);
+	--color-graph-type-place: var(--graph-type-place);
+
+	/* Spacing → p-{name} / m-{name} / gap-{name} / w-{name} / h-{name} / etc.
+	 * Note: Tailwind 4's max-w-{name} also reads from --spacing-{name}. The
+	 * K2 spacing scale tops out at 4rem (3xl) for component padding/gaps;
+	 * for content-container max-widths, prefer arbitrary values like
+	 * `max-w-[36rem]` rather than reusing these tokens. */
+	--spacing-2xs: var(--space-2xs);
+	--spacing-xs: var(--space-xs);
+	--spacing-sm: var(--space-sm);
+	--spacing-md: var(--space-md);
+	--spacing-lg: var(--space-lg);
+	--spacing-xl: var(--space-xl);
+	--spacing-2xl: var(--space-2xl);
+	--spacing-3xl: var(--space-3xl);
+
+	/* Type sizes → text-{name} (with bound line-heights and weights where appropriate) */
+	--text-xs: var(--text-xs);
+	--text-xs--line-height: var(--leading-tight);
+	--text-sm: var(--text-sm);
+	--text-sm--line-height: var(--leading-snug);
+	--text-md: var(--text-md);
+	--text-md--line-height: var(--leading-normal);
+	--text-lg: var(--text-lg);
+	--text-lg--line-height: var(--leading-normal);
+	--text-xl: var(--text-xl);
+	--text-xl--line-height: var(--leading-normal);
+	--text-2xl: var(--text-2xl);
+	--text-display-md: var(--text-display-md);
+	--text-display-md--line-height: var(--leading-display);
+	--text-display-md--font-weight: var(--weight-bold);
+	--text-display-lg: var(--text-display-lg);
+	--text-display-lg--line-height: var(--leading-display);
+	--text-display-lg--font-weight: var(--weight-bold);
+
+	/* Font families → font-{name} */
+	--font-sans: var(--font-sans);
+	--font-display: var(--font-display);
+	--font-mono: var(--font-mono);
+
+	/* Radii → rounded-{name} */
+	--radius-sm: var(--radius-sm);
+	--radius-md: var(--radius-md);
+	--radius-lg: var(--radius-lg);
+
+	/* Shadows → shadow-{name} */
+	--shadow-xs: var(--shadow-xs);
+	--shadow-sm: var(--shadow-sm);
+	--shadow-md: var(--shadow-md);
+	--shadow-lg: var(--shadow-lg);
+
+	/* Z-index → z-{name} */
+	--z-index-base: var(--z-base);
+	--z-index-sticky: var(--z-sticky);
+	--z-index-statusbar: var(--z-statusbar);
+	--z-index-dropdown: var(--z-dropdown);
+	--z-index-overlay: var(--z-overlay);
+	--z-index-modal: var(--z-modal);
+	--z-index-toast: var(--z-toast);
+	--z-index-tooltip: var(--z-tooltip);
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+
+	/* Motion tokens are intentionally NOT bridged to Tailwind utility classes
+   * (no `motion-base`, `ease-standard` utility). Consumed as raw CSS custom properties
+   * via style={{transition: 'opacity var(--motion-base) var(--ease-standard)'}}. */
+}
+
+/* ─── Body bg + native font rendering (matches cognee-frontend pattern) ─── */
+body {
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	color: var(--foreground);
+	background-color: var(--surface-canvas);
+}
+
+/* ─── Surface canvas atmosphere — 24px dot grid at 4% opacity ─────────────
+ * The dot grid gives flat zinc surfaces a subtle "engineering paper" depth
+ * without breaking calm tone. Applied via a utility class on the main
+ * canvas container so chrome surfaces (sidebar/status-bar use --muted) stay
+ * pristine. CSS-only, no animation, no GPU cost. Reduced-motion safe by
+ * construction (it's a static background). */
+.surface-canvas-atmosphere {
+	background-color: var(--surface-canvas);
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		rgba(24, 24, 27, 0.06) 1px,
+		transparent 0
+	);
+	background-size: 24px 24px;
+}
+
+[data-theme="dark"] .surface-canvas-atmosphere {
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		rgba(244, 244, 245, 0.06) 1px,
+		transparent 0
+	);
+}
+
+/* ─── Brand fonts ─────────────────────────────────────────────────────── */
+/* TWK Lausanne — custom-licensed display font, sourced from cognee-frontend. */
+@font-face {
+	font-family: "TWK Lausanne";
+	src:
+		url("/fonts/TWKLausanne-300.woff2") format("woff2"),
+		url("/fonts/TWKLausanne-300.woff") format("woff");
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "TWK Lausanne";
+	src:
+		url("/fonts/TWKLausanne-700.woff2") format("woff2"),
+		url("/fonts/TWKLausanne-700.woff") format("woff");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Inter and JetBrains Mono — loaded via Vite-native paths.
+ * Option A: <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"> in index.html.
+ * Option B: self-host woff2 from public/fonts/. */
+
+/* ─── Focus-ring base layer (matches cognee-frontend pattern) ─── */
+@layer base {
+	*:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(101, 16, 244, 0.1);
+	}
+}
+
+/* ─── Sidecar busy pulse — never shorter than --motion-ambient (vestibular safety) ─── */
+@keyframes sidecar-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.4;
+	}
+}
+
+.animate-sidecar-pulse {
+	animation: sidecar-pulse var(--motion-ambient) var(--ease-pulse) infinite;
+}
+
+/* ─── Reduced-motion safety (WCAG 2.3.3) ─── */
+@media (prefers-reduced-motion: reduce) {
+	/* Apply to any element using the sidecar-busy pulse; keep static dot + tooltip fallback per spec */
+	.sidecar-busy,
+	[data-busy="true"] {
+		animation: none !important;
+	}
+	/* Generic safety: clip transitions to instant for users who opted out */
+	*,
+	*::before,
+	*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
+
+/* ─── Default theme attribute fallback ───────── */
+/* When a Linux distro defaults to dark and the user has no <html data-theme="..."> set,
+ * the prefers-color-scheme rule above paints dark surfaces against dark wallpaper which
+ * can read as "broken." cognee-desktop ships v0.1 light-only; the Vite root index.html
+ * sets <html data-theme="light"> explicitly so dark-distro users see the intended chrome.
+ * Dark mode is planned for v0.2. */
+
+/* Dark-theme sidebar tokens are picked up automatically: --sidebar-*
+ * aliases above resolve via [data-theme="dark"] overrides of the source
+ * vars (--muted, --foreground, --accent, --border, etc.). */

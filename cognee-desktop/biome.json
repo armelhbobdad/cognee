@@ -1,0 +1,56 @@
+{
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/remix",
+    "ultracite/biome/vitest"
+  ],
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "tab",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noImportantStyles": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "always"
+    },
+    "globals": ["Bun"]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "files": {
+    "includes": [
+      "**/src/**/*",
+      "**/shared/**/*",
+      "**/.storybook/**/*",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/src/mainview/components/ui",
+      "!**/src/mainview/components/uitripled",
+      "!**/src/mainview/hooks",
+      "!**/src/mainview/routeTree.gen.ts",
+      "!**/storybook-static"
+    ]
+  }
+}

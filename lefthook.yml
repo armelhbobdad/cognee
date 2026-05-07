@@ -1,0 +1,17 @@
+pre-commit:
+  jobs:
+    - name: desktop-fix
+      root: cognee-desktop/
+      glob: "*.{ts,tsx,js,jsx,json,jsonc,css}"
+      run: bun x ultracite fix {staged_files}
+      stage_fixed: true
+  parallel: true
+  commands:
+    desktop-check:
+      root: cognee-desktop/
+      glob: "*.{ts,tsx,js,jsx,json,jsonc,css}"
+      run: bun x ultracite check {staged_files}
+    desktop-types:
+      root: cognee-desktop/
+      glob: "*.{ts,tsx}"
+      run: bunx tsc --noEmit
