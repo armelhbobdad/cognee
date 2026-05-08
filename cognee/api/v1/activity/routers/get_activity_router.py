@@ -146,6 +146,7 @@ def get_activity_router() -> APIRouter:
         from cognee.modules.users.models import User
         from cognee.modules.users.models.UserApiKey import UserApiKey
         from cognee.modules.data.models.Data import Data
+        from cognee.modules.search.models.Query import Query
         from sqlalchemy import select, func
         from datetime import datetime, timedelta, timezone
 
@@ -163,15 +164,44 @@ def get_activity_router() -> APIRouter:
             keys_result = await session.execute(keys_q)
             key_counts = {str(row.user_id): row.key_count for row in keys_result}
 
-            # Get latest data activity per user (most recent data item created)
-            activity_q = (
-                select(Data.owner_id, func.max(Data.created_at).label("last_active"))
+            # Get latest data ingestion per user
+            data_created_q = (
+                select(Data.owner_id, func.max(Data.created_at).label("ts"))
                 .group_by(Data.owner_id)
             )
-            activity_result = await session.execute(activity_q)
+            data_created_result = await session.execute(data_created_q)
             last_active_map = {
-                str(row.owner_id): row.last_active for row in activity_result if row.owner_id
+                str(row.owner_id): row.ts
+                for row in data_created_result
+                if row.owner_id
             }
+
+            # Get latest data access per user
+            data_accessed_q = (
+                select(Data.owner_id, func.max(Data.last_accessed).label("ts"))
+                .filter(Data.last_accessed.isnot(None))
+                .group_by(Data.owner_id)
+            )
+            data_accessed_result = await session.execute(data_accessed_q)
+            for row in data_accessed_result:
+                if not row.owner_id:
+                    continue
+                uid = str(row.owner_id)
+                if uid not in last_active_map or (row.ts and row.ts > last_active_map[uid]):
+                    last_active_map[uid] = row.ts
+
+            # Get latest search query per user
+            search_q = (
+                select(Query.user_id, func.max(Query.created_at).label("ts"))
+                .group_by(Query.user_id)
+            )
+            search_result = await session.execute(search_q)
+            for row in search_result:
+                if not row.user_id:
+                    continue
+                uid = str(row.user_id)
+                if uid not in last_active_map or (row.ts and row.ts > last_active_map[uid]):
+                    last_active_map[uid] = row.ts
 
         now = datetime.now(timezone.utc)
         live_cutoff = now - timedelta(minutes=30)
