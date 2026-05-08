@@ -183,13 +183,12 @@ def get_activity_router() -> APIRouter:
             is_default = email == "default_user@example.com"
 
             # Parse agent type from email
+            # The +{parent_user_id} suffix ensures agent name uniqueness across users
             if is_agent:
                 local_part = email.split("@")[0]
-                # Strip the +{parent_user_id} suffix if present
-                if "+" in local_part:
-                    local_part = local_part.split("+")[0]
-                agent_type = local_part.replace("-", " ").replace("_", " ")
-                agent_short_id = ""
+                parts = local_part.rsplit("-", 1)
+                agent_type = parts[0].replace("-", " ").replace("_", " ") if parts else local_part
+                agent_short_id = parts[1] if len(parts) > 1 else ""
             else:
                 agent_type = "Human User" if is_default else email.split("@")[0]
                 agent_short_id = ""
@@ -206,7 +205,7 @@ def get_activity_router() -> APIRouter:
             elif last_active:
                 status = "INACTIVE"
             else:
-                status = "INACTIVE"
+                status = "NEVER_CONNECTED"
 
             agents.append(
                 {
